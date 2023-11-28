@@ -1,5 +1,8 @@
 const User=require("../models/user.model")
 var bcrypt = require('bcryptjs');
+const jwt=require("jsonwebtoken");
+const SECRET_KEY="this-is-a-secret-key"
+
 
 
 exports.store=async(req,res)=>{
@@ -15,6 +18,42 @@ payload.password=hashedPassword;
 console.log(err)
     }
 }
+exports.login=async(req,res)=>{
+    try{
+      const {email,password}=req.body;
+      const findUser=await User.findOne({email})
+      if(!findUser){
+        return res.json({message:"User not found"})
+      }  
+      await bcrypt.compare(password,findUser.password,(err,result)=>{
+        if(err){
+            return res.json({err})
+        }
+        else if(result){
+          const payload={userId:findUser._id,email:findUser.email}
+          jwt.sign(payload,SECRET_KEY,{expiresIn:600},(err,result)=>{
+            if(err){
+                return res.json({err})
+            }
+            else{
+                res.json({message:"User signed successfully",token:result})
+            }
+          })
+
+        }
+        else{
+            res.json({message:"Password does not match"})
+        }
+      })
+    }
+    catch(err){
+        console.log(err)
+    }
+}
+
+
+
+
 
 // exports.index=async(req,res)=>{
 //     try{
